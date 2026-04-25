@@ -110,7 +110,7 @@ src/
 ├── esp32c6_touch_display_147.py
 └── esp32c6_touch_display_190.py
 ```
-
+Keywords: MicroPython, ESP32, ST7789, AXS5106L, CST816, touch display
 ---
 
 ## Fonts
