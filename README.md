@@ -55,9 +55,30 @@ These fonts are designed for the `st7789py` driver and work out of the box.
 Example usage:
 
 ```python
+### Example: Text output with external font
+
+Before running this example, copy a font file (e.g. `vga1_8x16.py`) to your board.
+
+Fonts are available here:  
+https://github.com/russhughes/st7789py_mpy/tree/master/romfonts
+
+# Select your board (uncomment ONE line)
+
+# from esp32c6_touch_display_147 import ESP32C6TouchDisplay147 as Board
+from esp32c6_touch_display_190 import ESP32C6TouchDisplay190 as Board
+
 import vga1_8x16 as font
 
-display.text(font, "Hello", 10, 10, colors.WHITE)
+board = Board()
+display = board.display
+colors = board.colors()
+
+# Clear screen
+board.clear(colors.BLACK)
+
+# Draw text
+display.text(font, "Hello", 10, 10, colors.WHITE, colors.BLACK)
+```
 
 ## Quick start
 
