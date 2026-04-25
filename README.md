@@ -4,6 +4,8 @@ MicroPython board abstraction and touch drivers for ESP32-based ST7789 LCD touch
 
 This project provides simple, ready-to-use board abstraction classes for small ESP32 touch display boards using ST7789 displays and capacitive touch controllers.
 
+---
+
 ## Supported boards
 
 | Board | Display | Touch controller | Module |
@@ -11,8 +13,10 @@ This project provides simple, ready-to-use board abstraction classes for small E
 | ESP32-C6 1.47" M-Touch Display | 172x320 | AXS5106L | `esp32c6_touch_display_147.py` |
 | Waveshare ESP32-C6 Touch LCD 1.9" | 170x320 | CST816 | `esp32c6_touch_display_190.py` |
 
-Planned:
+**Planned:**
 - ESP32-S3 1.9" 170x320 LCD Touch Display
+
+---
 
 ## Features
 
@@ -23,6 +27,8 @@ Planned:
 - TAP, LONG_TAP, DOUBLE_TAP and SWIPE gesture support
 - Simple board abstraction classes for MicroPython applications
 
+---
+
 ## Repository structure
 
 ```text
@@ -32,3 +38,64 @@ src/
 ├── touch_cst816.py
 ├── esp32c6_touch_display_147.py
 └── esp32c6_touch_display_190.py
+```
+
+---
+
+## Quick start
+
+Copy the files from `src/` to your MicroPython board.
+
+### Example (1.9" display)
+
+```python
+# Works for both 147 and 190 displays
+# just change the import
+
+# from esp32c6_touch_display_147 import ESP32C6TouchDisplay147 as Board
+from esp32c6_touch_display_190 import ESP32C6TouchDisplay190 as Board
+
+board = ESP32C6TouchDisplay190()
+display = board.display
+colors = board.colors()
+
+# Clear screen
+board.clear(colors.BLACK)
+
+# Outer border (tests full resolution and offsets)
+display.rect(0, 0, display.width, display.height, colors.RED)
+
+# Inner centered rectangle
+w = display.width // 2
+h = display.height // 2
+x = (display.width - w) // 2
+y = (display.height - h) // 2
+
+display.rect(x, y, w, h, colors.GREEN)
+
+# Touch event loop
+while True:
+    event = board.poll()
+    if event:
+        print(event)
+```
+
+---
+
+## License
+
+This project is released under the MIT License.
+
+The included `st7789py.py` driver is based on previous MIT-licensed work by:
+- Russ Hughes
+- Ivan Belokobylskiy
+- devbis
+
+Their copyright notices are preserved in the source file.
+
+---
+
+## Author
+
+Thomas Tillig, 2026  
+Development assisted by AI tools.
