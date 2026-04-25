@@ -41,6 +41,23 @@ src/
 ```
 
 ---
+## Fonts
+
+The examples in this repository do not depend on external fonts.
+
+If you want to use text rendering, compatible bitmap fonts can be found here:
+
+https://github.com/russhughes/st7789py_mpy/tree/master/romfonts
+
+These fonts are designed for the `st7789py` driver and work out of the box.
+
+
+Example usage:
+
+```python
+import vga1_8x16 as font
+
+display.text(font, "Hello", 10, 10, colors.WHITE)
 
 ## Quick start
 
