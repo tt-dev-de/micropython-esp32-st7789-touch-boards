@@ -5,6 +5,7 @@ MicroPython board abstraction and touch drivers for ESP32-based ST7789 LCD touch
 This project provides simple, ready-to-use board abstraction classes for small ESP32 touch display boards using ST7789 displays and capacitive touch controllers.
 
 ---
+
 ## Getting started in 2 minutes
 
 This is the fastest way to get your display and touch running.
@@ -56,6 +57,25 @@ while True:
         print(event)
 ```
 
+---
+
+### 3. Run
+
+Reset your board or run:
+
+```bash
+mpremote run main.py
+```
+
+---
+
+### Expected result
+
+- Red rectangle touches the display borders → resolution is correct  
+- Green rectangle is centered → alignment is correct  
+- Touching the display prints events in the console  
+
+---
 
 ## Supported boards
 
@@ -92,6 +112,7 @@ src/
 ```
 
 ---
+
 ## Fonts
 
 The examples in this repository do not depend on external fonts.
@@ -102,17 +123,11 @@ https://github.com/russhughes/st7789py_mpy/tree/master/romfonts
 
 These fonts are designed for the `st7789py` driver and work out of the box.
 
-
-Example usage:
-
-```python
 ### Example: Text output with external font
 
 Before running this example, copy a font file (e.g. `vga1_8x16.py`) to your board.
 
-Fonts are available here:  
-https://github.com/russhughes/st7789py_mpy/tree/master/romfonts
-
+```python
 # Select your board (uncomment ONE line)
 
 # from esp32c6_touch_display_147 import ESP32C6TouchDisplay147 as Board
