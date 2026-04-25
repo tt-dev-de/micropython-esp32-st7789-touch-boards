@@ -5,6 +5,57 @@ MicroPython board abstraction and touch drivers for ESP32-based ST7789 LCD touch
 This project provides simple, ready-to-use board abstraction classes for small ESP32 touch display boards using ST7789 displays and capacitive touch controllers.
 
 ---
+## Getting started in 2 minutes
+
+This is the fastest way to get your display and touch running.
+
+### 1. Copy files to your board
+
+Copy all files from the `src/` folder to your MicroPython device:
+
+- `st7789py.py`
+- `touch_axs5106l.py`
+- `touch_cst816.py`
+- `esp32c6_touch_display_147.py`
+- `esp32c6_touch_display_190.py`
+
+---
+
+### 2. Create a simple test program
+
+Create a file `main.py` on your device:
+
+```python
+# Select your board (uncomment ONE line)
+
+# from esp32c6_touch_display_147 import ESP32C6TouchDisplay147 as Board
+from esp32c6_touch_display_190 import ESP32C6TouchDisplay190 as Board
+
+board = Board()
+display = board.display
+colors = board.colors()
+
+# Clear screen
+board.clear(colors.BLACK)
+
+# Draw border (checks resolution and alignment)
+display.rect(0, 0, display.width, display.height, colors.RED)
+
+# Draw centered rectangle
+w = display.width // 2
+h = display.height // 2
+x = (display.width - w) // 2
+y = (display.height - h) // 2
+
+display.rect(x, y, w, h, colors.GREEN)
+
+# Touch test
+while True:
+    event = board.poll()
+    if event:
+        print(event)
+```
+
 
 ## Supported boards
 
@@ -78,44 +129,6 @@ board.clear(colors.BLACK)
 
 # Draw text
 display.text(font, "Hello", 10, 10, colors.WHITE, colors.BLACK)
-```
-
-## Quick start
-
-Copy the files from `src/` to your MicroPython board.
-
-### Example (1.9" display)
-
-```python
-# Works for both 147 and 190 displays
-# just change the import
-
-# from esp32c6_touch_display_147 import ESP32C6TouchDisplay147 as Board
-from esp32c6_touch_display_190 import ESP32C6TouchDisplay190 as Board
-
-board = ESP32C6TouchDisplay190()
-display = board.display
-colors = board.colors()
-
-# Clear screen
-board.clear(colors.BLACK)
-
-# Outer border (tests full resolution and offsets)
-display.rect(0, 0, display.width, display.height, colors.RED)
-
-# Inner centered rectangle
-w = display.width // 2
-h = display.height // 2
-x = (display.width - w) // 2
-y = (display.height - h) // 2
-
-display.rect(x, y, w, h, colors.GREEN)
-
-# Touch event loop
-while True:
-    event = board.poll()
-    if event:
-        print(event)
 ```
 
 ---
