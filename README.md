@@ -144,10 +144,10 @@ board.clear(colors.BLACK)
 # Draw text
 display.text(font, "Hello", 10, 10, colors.WHITE, colors.BLACK)
 ```
-
+---
 ## Keywords
-
 MicroPython, ESP32, ST7789, AXS5106L, CST816, touch display
+
 ---
 ## License
 
