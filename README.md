@@ -1,6 +1,6 @@
 # MicroPython ESP32 ST7789 Touch Boards
 
-MicroPython board abstraction and touch drivers for ESP32-based ST7789 LCD touch displays.
+MicroPython board abstraction and touch drivers for ESP32-based ST7789 LCD touch displays, supporting CST8166 or AXS5106L touch controllers.
 
 This project provides simple, ready-to-use board abstraction classes for small ESP32 touch display boards using ST7789 displays and capacitive touch controllers.
 
