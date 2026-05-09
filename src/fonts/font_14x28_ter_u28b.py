@@ -6,6 +6,7 @@ Source BDF: ter-u28b.bdf
 Source family: Terminus
 Source font: -xos4-Terminus-Bold-R-Normal--28-280-72-72-C-140-ISO10646-1
 Source copyright: Copyright (C) 2014 Dimitar Toshkov Zhekov
+Source Licensed under the SIL Open Font License, Version 1.1
 
 Format: fixed width, row-major bitmap, MSB left-aligned.
 Original BDF cell preserved: 14x28 pixels.
