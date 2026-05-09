@@ -6,6 +6,7 @@ Source BDF: ter-u22n.bdf
 Source family: Terminus
 Source font: -xos4-Terminus-Medium-R-Normal--22-220-72-72-C-110-ISO10646-1
 Source copyright: Copyright (C) 2014 Dimitar Toshkov Zhekov
+Source Licensed under the SIL Open Font License, Version 1.1
 
 Format: fixed width, row-major bitmap, MSB left-aligned.
 Original BDF cell preserved: 11x22 pixels.
