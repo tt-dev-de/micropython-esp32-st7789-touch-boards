@@ -4,7 +4,8 @@
 
 # Select your board:
 # from esp32c6_touch_display_147 import ESP32C6TouchDisplay147 as Board
-from esp32c6_touch_display_190 import ESP32C6TouchDisplay190 as Board
+# from esp32c6_touch_display_190 import ESP32C6TouchDisplay190 as Board
+from esp32s3_touch_display_190 import ESP32S3TouchDisplay190 as Board
 
 board = Board()
 display = board.display
