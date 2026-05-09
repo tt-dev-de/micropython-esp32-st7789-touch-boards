@@ -6,6 +6,7 @@ Source BDF: spleen-8x16.bdf
 Source family: Spleen
 Source font: -misc-spleen-medium-r-normal--16-160-72-72-C-80-ISO10646-1
 Source copyright: Copyright (c) 2018-2026, Frederic Cambus
+Source Spleen is released under the BSD 2-Clause license.
 
 Format: fixed width, row-major bitmap, MSB left-aligned.
 Original BDF cell preserved: 8x16 pixels.
