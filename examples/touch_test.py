@@ -1,14 +1,18 @@
 # examples/touch_test.py
 # Touch test for ESP32 ST7789 touch boards without font dependency.
+# Touch interactions are printed to the terminal
 
-DISPLAY_SIZE = 190  # 147 or 190
+# Select your board:
+BOARD_TYPE = "S3_190"  # "C6_147" or "C6_190" or "S3_190"
 
-if DISPLAY_SIZE == 147:
-    from esp32c6_touch_display_147 import ESP32C6TouchDisplay147 as DisplayClass
-elif DISPLAY_SIZE == 190:
-    from esp32c6_touch_display_190 import ESP32C6TouchDisplay190 as DisplayClass
+if BOARD_TYPE == "C6_147":
+    from esp32c6_touch_display_147 import ESP32C6TouchDisplay147 as Board
+elif BOARD_TYPE == "C6_190":
+    from esp32c6_touch_display_190 import ESP32C6TouchDisplay190 as Board
+elif BOARD_TYPE == "S3_190":
+    from esp32s3_touch_display_190 import ESP32S3TouchDisplay190 as Board
 else:
-    raise ValueError("Need to set DISPLAY_SIZE to either 147 or 190")
+    raise ValueError(f"Unsupported BOARD_TYPE: {BOARD_TYPE}")
 
 import time
 
@@ -36,7 +40,7 @@ def clear_screen(board, status_color):
 
 
 def main():
-    board = DisplayClass()
+    board = Board()
     c = board.colors()
 
     print("I2C scan:", [hex(x) for x in board.scan_touch_i2c()])
