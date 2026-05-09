@@ -6,6 +6,7 @@ Source BDF: t0-18i.bdf
 Source family: Ttyp0
 Source font: -UW-Ttyp0-Medium-I-Normal--18-170-75-75-C-90-UW-Fontspecific
 Source copyright: Copyright (C) 2012, 2013 Uwe Waldmann
+Licensed under an MIT‑style license with additional naming restrictions
 
 Format: fixed width, row-major bitmap, MSB left-aligned.
 Original BDF cell preserved: 9x18 pixels.
