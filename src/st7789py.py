@@ -38,7 +38,7 @@ https://github.com/devbis/st7789py_mpy.
 
 This driver supports:
 
-- 320x240, 240x240, 135x240, 128x128 and 172x320 pixel displays
+- 320x240, 240x240, 135x240, 128x128, 170x320 and 172x320 pixel displays
 - Display rotation
 - RGB and BGR color orders
 - Hardware based scrolling
