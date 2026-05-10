@@ -4,7 +4,9 @@ MIT License
 Modified by Thomas Tillig (2026)
 - Added 172x320 display support
 - Added 170x320 display support
-- Custom rotation for ESP32-C6 M-Touch board
+- Added 12-bit-wide font support
+- Added generic fixed-width bitmap font support
+
 Development assisted by AI tools.
 
 Original work:
@@ -40,8 +42,8 @@ This driver supports:
 - Display rotation
 - RGB and BGR color orders
 - Hardware based scrolling
-- Drawing text using 8 and 16 bit wide bitmap fonts with heights that are
-  multiples of 8.  Included are 12 bitmap fonts derived from classic pc
+- Drawing text using 8, 12 and 16 bit wide bitmap fonts and generic
+  fixed-width bitmap fonts with arbitrary widths/heights.  Included are 12 bitmap fonts derived from classic pc
   BIOS text mode fonts.
 - Drawing text using converted TrueType fonts.
 - Drawing converted bitmaps
@@ -638,6 +640,18 @@ class ST7789:
         """
         self._write(_ST7789_VSCSAD, struct.pack(">H", vssa))
 
+    @staticmethod
+    def _font_data(font):
+        """Return bitmap font data.
+
+        Some generated bitmap font modules expose FONT, others expose _FONT.
+        This helper accepts both variants.
+        """
+        try:
+            return font.FONT
+        except AttributeError:
+            return font._FONT
+
     @micropython.viper
     @staticmethod
     def _pack8(glyphs, idx: uint, fg_color: uint, bg_color: uint):
@@ -656,6 +670,35 @@ class ST7789:
             bitmap[i + 6] = fg_color if byte & _BIT1 else bg_color
             bitmap[i + 7] = fg_color if byte & _BIT0 else bg_color
             idx += 1
+
+        return buffer
+
+    @micropython.viper
+    @staticmethod
+    def _pack12(glyphs, idx: uint, fg_color: uint, bg_color: uint):
+        """Pack one 12x8 slice from a 12-pixel-wide bitmap font."""
+        buffer = bytearray(192)
+        bitmap = ptr16(buffer)
+        glyph = ptr8(glyphs)
+
+        for i in range(0, 96, 12):
+            byte1 = glyph[idx]
+            idx += 1
+            byte2 = glyph[idx]
+            idx += 1
+
+            bitmap[i] = fg_color if byte1 & _BIT7 else bg_color
+            bitmap[i + 1] = fg_color if byte1 & _BIT6 else bg_color
+            bitmap[i + 2] = fg_color if byte1 & _BIT5 else bg_color
+            bitmap[i + 3] = fg_color if byte1 & _BIT4 else bg_color
+            bitmap[i + 4] = fg_color if byte1 & _BIT3 else bg_color
+            bitmap[i + 5] = fg_color if byte1 & _BIT2 else bg_color
+            bitmap[i + 6] = fg_color if byte1 & _BIT1 else bg_color
+            bitmap[i + 7] = fg_color if byte1 & _BIT0 else bg_color
+            bitmap[i + 8] = fg_color if byte2 & _BIT7 else bg_color
+            bitmap[i + 9] = fg_color if byte2 & _BIT6 else bg_color
+            bitmap[i + 10] = fg_color if byte2 & _BIT5 else bg_color
+            bitmap[i + 11] = fg_color if byte2 & _BIT4 else bg_color
 
         return buffer
 
@@ -734,10 +777,38 @@ class ST7789:
 
                 for line in range(passes):
                     idx = (ch - font.FIRST) * size + (each * line)
-                    buffer = self._pack8(font.FONT, idx, fg_color, bg_color)
+                    buffer = self._pack8(self._font_data(font), idx, fg_color, bg_color)
                     self.blit_buffer(buffer, x0, y0 + 8 * line, 8, 8)
 
                 x0 += 8
+
+    def _text12(self, font, text, x0, y0, fg_color=WHITE, bg_color=BLACK):
+        """
+        Internal method to draw characters with width of 12 and heights that
+        are multiples of 8, for example 12x24 bitmap fonts.
+
+        A 12-pixel-wide glyph uses 2 bytes per row. The rightmost 4 bits of
+        the second byte are padding and are ignored.
+        """
+
+        font_data = self._font_data(font)
+        bytes_per_row = 2
+        passes = font.HEIGHT // 8
+        glyph_size = font.HEIGHT * bytes_per_row
+        bytes_per_pass = 8 * bytes_per_row
+
+        for char in text:
+            ch = ord(char)
+            if (
+                font.FIRST <= ch < font.LAST
+                and x0 + font.WIDTH <= self.width
+                and y0 + font.HEIGHT <= self.height
+            ):
+                for line in range(passes):
+                    idx = (ch - font.FIRST) * glyph_size + (bytes_per_pass * line)
+                    buffer = self._pack12(font_data, idx, fg_color, bg_color)
+                    self.blit_buffer(buffer, x0, y0 + 8 * line, 12, 8)
+            x0 += 12
 
     def _text16(self, font, text, x0, y0, fg_color=WHITE, bg_color=BLACK):
         """
@@ -770,14 +841,81 @@ class ST7789:
 
                 for line in range(passes):
                     idx = (ch - font.FIRST) * size + (each * line)
-                    buffer = self._pack16(font.FONT, idx, fg_color, bg_color)
+                    buffer = self._pack16(self._font_data(font), idx, fg_color, bg_color)
                     self.blit_buffer(buffer, x0, y0 + 8 * line, 16, 8)
             x0 += 16
 
+
+    def _text_fixed(self, font, text, x0, y0, fg_color=WHITE, bg_color=BLACK):
+        """
+        Generic fixed-width bitmap font renderer.
+
+        This method supports generated monospace bitmap font modules with:
+            WIDTH
+            HEIGHT
+            FIRST
+            LAST
+            FONT or _FONT
+
+        Optional:
+            ROW_BYTES
+
+        Font data layout:
+            - one glyph after another
+            - each glyph has HEIGHT rows
+            - each row has ceil(WIDTH / 8) bytes
+            - bits are MSB first, left to right
+
+        This generic renderer is slower than the optimized 8/12/16 pixel
+        renderers, but it supports widths such as 9, 10, 11, 14 and 32 and
+        heights such as 17, 18, 20, 22, 28 and 64.
+        """
+
+        font_data = self._font_data(font)
+        width = font.WIDTH
+        height = font.HEIGHT
+
+        try:
+            row_bytes = font.ROW_BYTES
+        except AttributeError:
+            row_bytes = (width + 7) // 8
+
+        glyph_size = height * row_bytes
+        buffer_len = width * height * 2
+
+        for char in text:
+            ch = ord(char)
+
+            if (
+                font.FIRST <= ch <= font.LAST
+                and x0 + width <= self.width
+                and y0 + height <= self.height
+            ):
+                glyph_idx = (ch - font.FIRST) * glyph_size
+                buffer = bytearray(buffer_len)
+                dst = 0
+
+                for row in range(height):
+                    row_idx = glyph_idx + row * row_bytes
+
+                    for col in range(width):
+                        byte = font_data[row_idx + (col >> 3)]
+                        bit = 0x80 >> (col & 0x07)
+                        pixel = fg_color if byte & bit else bg_color
+
+                        # Same byte order behavior as the viper packers using ptr16.
+                        buffer[dst] = pixel & 0xFF
+                        buffer[dst + 1] = (pixel >> 8) & 0xFF
+                        dst += 2
+
+                self.blit_buffer(buffer, x0, y0, width, height)
+
+            x0 += width
+
     def text(self, font, text, x0, y0, color=WHITE, background=BLACK):
         """
-        Draw text on display in specified font and colors. 8 and 16 bit wide
-        fonts are supported.
+        Draw text on display in specified font and colors. 8, 12 and 16 bit wide
+        bitmap fonts are supported.
 
         Args:
             font (module): font module to use.
@@ -794,10 +932,16 @@ class ST7789:
             else ((background << 8) & 0xFF00) | (background >> 8)
         )
 
-        if font.WIDTH == 8:
+        # Use the original optimized renderers for the classic font sizes.
+        # All other fixed-width bitmap fonts are handled by the generic renderer.
+        if font.WIDTH == 8 and font.HEIGHT in (8, 16):
             self._text8(font, text, x0, y0, fg_color, bg_color)
-        else:
+        elif font.WIDTH == 12 and font.HEIGHT % 8 == 0:
+            self._text12(font, text, x0, y0, fg_color, bg_color)
+        elif font.WIDTH == 16 and font.HEIGHT in (16, 32):
             self._text16(font, text, x0, y0, fg_color, bg_color)
+        else:
+            self._text_fixed(font, text, x0, y0, fg_color, bg_color)
 
     def bitmap(self, bitmap, x, y, index=0):
         """
