@@ -28,7 +28,7 @@ SOFTWARE.
 Module: esp32s3_touch_display_190.py
 
 Version:
-    1.0.0
+    1.0.1
 
 Description:
     Board abstraction layer for the Waveshare ESP32-S3 1.9" Touch LCD
@@ -244,4 +244,3 @@ class ESP32S3TouchDisplay190:
 
         self.backlight.duty_u16(target)
         self._last_bl = target
-
