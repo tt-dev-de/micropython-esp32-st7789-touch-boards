@@ -7,18 +7,32 @@ Development assisted by AI tools.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction...
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 -------------------------------------------------------------------------------
 
 Module: touch_axs5106l.py
 
 Version:
-    1.0.0
+    1.0.1
 
 Description:
     MicroPython driver and event engine for the AXS5106L capacitive touch controller,
-    as used on ESP32-C6 1.47" 172x320 M-Touch displays.
+    as used on as used on Waveshare ESP32 Touch LCD boards.
 
     The module provides both low-level hardware access and a higher-level,
     state-based touch event engine.
@@ -30,11 +44,11 @@ Features:
     - Robust touch tracking independent of INT signal glitches
     - State machine-based event processing
 
-Supported Events:
+Supported Events from touch_engine.py:
     - DOWN
     - MOVE
     - UP
-    - DOUBLE_TAP (detected on second DOWN for low latency)
+    - DOUBLE_TAP
 
     UP events may include gesture classification:
     - TAP
@@ -45,11 +59,19 @@ Supported Events:
     - SWIPE_DOWN
 
 Design Notes:
-    - Touch detection uses INT only for initial contact (IDLE state).
-      Continuous tracking is performed via active polling.
-    - Double-tap detection is performed on the second DOWN event
-      for improved responsiveness.
-    - Tap position uses the midpoint between touch start and end.
+    - The controller's own gesture register is intentionally not used for final
+      gesture classification, because those direction codes usually do not match
+      the display orientation after rotation.
+    - Gestures are derived from mapped screen coordinates.
+    - Higher-level touch event processing such as TAP, LONG_TAP,
+      DOUBLE_TAP and SWIPE detection can be implemented using the optional
+      touch_engine.py module and its TouchEngine class.
+    - The touch driver itself focuses on low-level hardware access and
+      coordinate mapping, while touch_engine.py provides a reusable,
+      controller-independent event state machine.
+    - Default rotation is set to 270 degrees, which is the most likely match for
+      landscape mode on boards. If the axes still do not match on your
+      firmware/display setup, try rotation=90.
 
 Author:
     Thomas Tillig
@@ -214,153 +236,9 @@ class TouchAXS5106L:
         """
         return self.read_if_touched()
 
-
-class TouchEngine:
-    STATE_IDLE = 0
-    STATE_TOUCHING = 1
-
-    def __init__(
-        self,
-        touch,
-        move_deadzone=2,
-        swipe_threshold=30,
-        tap_max_distance=10,
-        release_misses=4,
-        long_tap_ms=600,
-        double_tap_ms=700,
-        double_tap_distance=100,
-    ):
-        self.touch = touch
-        self.move_deadzone = move_deadzone
-        self.swipe_threshold = swipe_threshold
-        self.tap_max_distance = tap_max_distance
-        self.release_misses = release_misses
-
-        self.long_tap_ms = long_tap_ms
-        self.double_tap_ms = double_tap_ms
-        self.double_tap_distance = double_tap_distance
-
-        self.state = self.STATE_IDLE
-
-        self.start_x = self.start_y = 0
-        self.last_x = self.last_y = 0
-        self.current_x = self.current_y = 0
-
-        self.touch_start_ms = 0
-        self.misses = 0
-
-        self.last_tap_ms = None
-        self.last_tap_x = 0
-        self.last_tap_y = 0
-
-        self.skip_next_up = False
-
-    def _make_event(self, etype, x, y, dx=0, dy=0):
-        return {
-            "type": etype,
-            "x": x,
-            "y": y,
-            "start_x": self.start_x,
-            "start_y": self.start_y,
-            "dx": dx,
-            "dy": dy,
-            "duration_ms": time.ticks_diff(time.ticks_ms(), self.touch_start_ms),
-        }
-
-    def _make_double_tap_event(self, x, y, dt_ms):
-        return {
-            "type": "DOUBLE_TAP",
-            "x": x,
-            "y": y,
-            "tap1_x": self.last_tap_x,
-            "tap1_y": self.last_tap_y,
-            "tap2_x": x,
-            "tap2_y": y,
-            "dt_ms": dt_ms,
-        }
-
-    def _detect_swipe_type(self, dx, dy):
-        if abs(dx) < self.swipe_threshold and abs(dy) < self.swipe_threshold:
-            return None
-        return "SWIPE_RIGHT" if abs(dx) > abs(dy) and dx > 0 else \
-               "SWIPE_LEFT" if abs(dx) > abs(dy) else \
-               "SWIPE_DOWN" if dy > 0 else "SWIPE_UP"
-
-    def _is_near(self, x1, y1, x2, y2, dist):
-        return (x1 - x2) ** 2 + (y1 - y2) ** 2 <= dist ** 2
-
-    def _tap_center(self):
-        return (self.start_x + self.last_x) // 2, (self.start_y + self.last_y) // 2
-
-    def poll(self):
-        if self.state == self.STATE_IDLE:
-            pt = self.touch.read_if_touched()
-            if pt is None:
-                return None
-
-            x, y = pt
-            self.start_x = self.last_x = self.current_x = x
-            self.start_y = self.last_y = self.current_y = y
-            self.touch_start_ms = time.ticks_ms()
-            self.misses = 0
-            self.state = self.STATE_TOUCHING
-
-            if self.last_tap_ms:
-                dt = time.ticks_diff(self.touch_start_ms, self.last_tap_ms)
-                if dt <= self.double_tap_ms and self._is_near(x, y, self.last_tap_x, self.last_tap_y, self.double_tap_distance):
-                    self.skip_next_up = True
-                    self.last_tap_ms = None
-                    return self._make_double_tap_event(x, y, dt)
-
-            return self._make_event("DOWN", x, y)
-
-        if self.state == self.STATE_TOUCHING:
-            pt = self.touch.read_continuous()
-
-            if pt is None:
-                self.misses += 1
-                if self.misses < self.release_misses:
-                    return None
-
-                if self.skip_next_up:
-                    self.state = self.STATE_IDLE
-                    self.skip_next_up = False
-                    return None
-
-                dx = self.last_x - self.start_x
-                dy = self.last_y - self.start_y
-                evt = self._make_event("UP", self.last_x, self.last_y, dx, dy)
-
-                self.state = self.STATE_IDLE
-
-                swipe = self._detect_swipe_type(dx, dy)
-                if swipe:
-                    evt["gesture"] = swipe
-                    self.last_tap_ms = None
-                else:
-                    if dx*dx + dy*dy <= self.tap_max_distance**2:
-                        if evt["duration_ms"] >= self.long_tap_ms:
-                            evt["gesture"] = "LONG_TAP"
-                            self.last_tap_ms = None
-                        else:
-                            evt["gesture"] = "TAP"
-                            self.last_tap_ms = time.ticks_ms()
-                            self.last_tap_x, self.last_tap_y = self._tap_center()
-                    else:
-                        evt["gesture"] = None
-                        self.last_tap_ms = None
-
-                return evt
-
-            self.misses = 0
-            x, y = pt
-
-            if abs(x - self.last_x) >= self.move_deadzone or abs(y - self.last_y) >= self.move_deadzone:
-                self.last_x, self.last_y = x, y
-                return self._make_event("MOVE", x, y, x - self.start_x, y - self.start_y)
-
-        return None
-
+# Re-export for backward compatibility:
+# Allows: from touch_axs5106l import touch_axs5106l, TouchEngine
+from touch_engine import TouchEngine
 
 
 def main():
