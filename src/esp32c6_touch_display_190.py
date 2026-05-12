@@ -28,7 +28,7 @@ SOFTWARE.
 Module: esp32c6_touch_display_190.py
 
 Version:
-    1.0.0
+    1.0.1
 
 Description:
     Board abstraction layer for the Waveshare ESP32-C6 1.9" Touch LCD
