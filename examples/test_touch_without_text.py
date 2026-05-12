@@ -1,4 +1,4 @@
-# examples/touch_test.py
+# touch_test.py
 # Touch test for ESP32 ST7789 touch boards without font dependency.
 # Touch interactions are printed to the terminal
 
