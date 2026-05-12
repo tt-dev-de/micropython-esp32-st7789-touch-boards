@@ -28,7 +28,7 @@ SOFTWARE.
 Module: esp32c6_touch_display_147.py
 
 Version:
-    1.0.0
+    1.0.1
 
 Description:
     Board abstraction layer for the ESP32-C6 1.47" M-Touch display
